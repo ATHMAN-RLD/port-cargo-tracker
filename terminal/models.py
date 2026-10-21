@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 
 class Vessel(models.Model):
@@ -117,6 +117,28 @@ class GateEvent(models.Model):
     truck_plate = models.CharField(max_length=15)
     appointment_ref = models.CharField(max_length=30, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        # Only check brand-new events, so old records can still be edited.
+        if self.pk is None and self.container_id:
+            if (
+                self.direction == self.Direction.OUT
+                and self.container.status != Container.Status.IN_YARD
+            ):
+                raise ValidationError(
+                    "Only a container that is in the yard can gate out."
+                )
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        # atomic = both changes succeed together, or neither is saved
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if is_new and self.direction == self.Direction.OUT:
+                container = self.container
+                container.status = Container.Status.GATED_OUT
+                container.slot = None  # frees the yard slot
+                container.save()
 
     def __str__(self):
         return f"{self.container.number} {self.direction} {self.timestamp:%Y-%m-%d %H:%M}"  
