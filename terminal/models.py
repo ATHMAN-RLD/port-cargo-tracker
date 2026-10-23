@@ -1,5 +1,8 @@
+from math import ceil
+
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.utils import timezone
 
 
 class Vessel(models.Model):
@@ -98,9 +101,43 @@ class Container(models.Model):
         YardSlot, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="container",
     )
+    # When the box entered the yard: the start of the storage clock
+    arrived_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.number
+
+    def storage_charge(self):
+        """Work out storage days and the fee owed.
+
+        Clock starts at arrived_at. It stops at the gate-out time, or at
+        "now" if the box is still in the yard (a running charge).
+        Any part of a day counts as a full day.
+        Returns None if arrived_at or a matching Tariff is missing.
+        """
+        if self.arrived_at is None:
+            return None
+        tariff = Tariff.objects.filter(size_ft=self.size_ft).first()
+        if tariff is None:
+            return None
+
+        gate_out = (
+            self.gate_events.filter(direction=GateEvent.Direction.OUT)
+            .order_by("-timestamp")
+            .first()
+        )
+        end = gate_out.timestamp if gate_out else timezone.now()
+
+        seconds = (end - self.arrived_at).total_seconds()
+        days_stored = max(0, ceil(seconds / 86400))
+        chargeable_days = max(0, days_stored - tariff.free_days)
+        return {
+            "days_stored": days_stored,
+            "free_days": tariff.free_days,
+            "chargeable_days": chargeable_days,
+            "amount_kes": chargeable_days * tariff.daily_rate_kes,
+            "still_in_yard": gate_out is None,
+        }
 
 
 class GateEvent(models.Model):
@@ -141,4 +178,17 @@ class GateEvent(models.Model):
                 container.save()
 
     def __str__(self):
-        return f"{self.container.number} {self.direction} {self.timestamp:%Y-%m-%d %H:%M}"  
+        return f"{self.container.number} {self.direction} {self.timestamp:%Y-%m-%d %H:%M}"
+
+
+class Tariff(models.Model):
+    """Storage pricing per container size. Editable in admin, not in code."""
+
+    size_ft = models.PositiveSmallIntegerField(
+        choices=[(20, "20ft"), (40, "40ft")], unique=True
+    )
+    free_days = models.PositiveSmallIntegerField(default=3)
+    daily_rate_kes = models.DecimalField(max_digits=8, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day"  
