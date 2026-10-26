@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
@@ -157,6 +158,9 @@ class GateRulesTests(TestCase):
 
 class ApiTests(APITestCase):
     def setUp(self):
+        # The API requires a login, so every test here acts as a signed-in user
+        user = get_user_model().objects.create_user("clerk", password="Pw-12345!")
+        self.client.force_authenticate(user=user)
         self.vessel, self.berth, self.call, self.slot = make_world()
         self.box = Container.objects.create(
             number="MSKU1234567",
@@ -269,4 +273,50 @@ class ApiTests(APITestCase):
         )
         self.assertEqual(
             self.client.delete(f"/api/gate-events/{event.id}/").status_code, 405
-        ) 
+        )
+
+
+class AuthTests(APITestCase):
+    """Nobody gets data or makes changes without logging in first."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            "clerk", password="Pw-12345!"
+        )
+        make_world()
+
+    def test_anonymous_cannot_read(self):
+        self.assertEqual(self.client.get("/api/containers/").status_code, 401)
+
+    def test_anonymous_cannot_write(self):
+        r = self.client.post(
+            "/api/gate-events/",
+            {"container": 1, "direction": "IN", "truck_plate": "KAA 111A"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(GateEvent.objects.count(), 0)
+
+    def test_login_returns_a_token_that_unlocks_the_api(self):
+        r = self.client.post(
+            "/api/auth/token/",
+            {"username": "clerk", "password": "Pw-12345!"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        token = r.json()["token"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(self.client.get("/api/containers/").status_code, 200)
+
+    def test_wrong_password_gets_no_token(self):
+        r = self.client.post(
+            "/api/auth/token/",
+            {"username": "clerk", "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertNotIn("token", r.json())
+
+    def test_a_made_up_token_is_refused(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Token not-a-real-token")
+        self.assertEqual(self.client.get("/api/containers/").status_code, 401)  
