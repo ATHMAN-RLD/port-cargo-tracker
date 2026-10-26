@@ -1,7 +1,9 @@
 from datetime import timedelta
+from unittest import mock, skipUnless
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APITestCase
@@ -128,6 +130,56 @@ class ActualTimeRulesTests(TestCase):
         self.check(eta=None)
 
 
+ON_POSTGRES = connection.vendor == "postgresql"
+
+
+class DatabaseGuardTests(TestCase):
+    """Rules the database enforces itself, even when clean() is skipped.
+
+    objects.create() does not call clean(), so these tests show what
+    happens if the Python checks are bypassed or two requests race.
+    """
+
+    def setUp(self):
+        # make_world books Berth 1 from 1 Nov 08:00 to 2 Nov 08:00
+        self.vessel, self.berth, self.call, _ = make_world()
+
+    def book(self, eta, etd, berth="same"):
+        return VesselCall.objects.create(
+            vessel=self.vessel,
+            berth=self.berth if berth == "same" else berth,
+            eta=eta,
+            etd=etd,
+        )
+
+    def test_departure_before_arrival_is_blocked(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self.book("2026-12-05T08:00:00Z", "2026-12-01T08:00:00Z", berth=None)
+
+    @skipUnless(ON_POSTGRES, "berth-overlap guard is PostgreSQL-only")
+    def test_overlap_on_same_berth_is_blocked(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self.book("2026-11-01T20:00:00Z", "2026-11-03T08:00:00Z")
+
+    @skipUnless(ON_POSTGRES, "berth-overlap guard is PostgreSQL-only")
+    def test_back_to_back_on_same_berth_is_allowed(self):
+        # arrives at the exact minute the first ship leaves
+        self.book("2026-11-02T08:00:00Z", "2026-11-03T08:00:00Z")
+        self.assertEqual(VesselCall.objects.count(), 2)
+
+    @skipUnless(ON_POSTGRES, "berth-overlap guard is PostgreSQL-only")
+    def test_same_times_on_another_berth_are_allowed(self):
+        other = Berth.objects.create(name="Berth 2", length_m=300, max_draft_m=14)
+        self.book("2026-11-01T08:00:00Z", "2026-11-02T08:00:00Z", berth=other)
+        self.assertEqual(VesselCall.objects.count(), 2)
+
+    @skipUnless(ON_POSTGRES, "berth-overlap guard is PostgreSQL-only")
+    def test_calls_without_a_berth_may_overlap(self):
+        self.book("2026-11-01T08:00:00Z", "2026-11-02T08:00:00Z", berth=None)
+        self.book("2026-11-01T09:00:00Z", "2026-11-02T09:00:00Z", berth=None)
+        self.assertEqual(VesselCall.objects.count(), 3)
+
+
 class GateRulesTests(TestCase):
     def setUp(self):
         _, _, self.call, self.slot = make_world()
@@ -250,6 +302,38 @@ class ApiTests(APITestCase):
         self.assertIn("in the yard", str(again.json()))
         self.assertEqual(GateEvent.objects.count(), 1)
 
+    @skipUnless(ON_POSTGRES, "berth-overlap guard is PostgreSQL-only")
+    def test_race_on_a_berth_gives_a_clean_400_not_a_crash(self):
+        # Pretend two requests both passed clean() at the same instant
+        with mock.patch.object(VesselCall, "clean", lambda self: None):
+            r = self.client.post(
+                "/api/vessel-calls/",
+                {
+                    "vessel": self.other_vessel("1234003").id,
+                    "berth": self.berth.id,
+                    "eta": "2026-11-01T20:00:00Z",
+                    "etd": "2026-11-03T08:00:00Z",
+                },
+                format="json",
+            )
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertIn("already booked", str(r.json()))
+        self.assertEqual(VesselCall.objects.count(), 1)
+
+    def test_bad_dates_that_slip_past_clean_give_a_clean_400(self):
+        with mock.patch.object(VesselCall, "clean", lambda self: None):
+            r = self.client.post(
+                "/api/vessel-calls/",
+                {
+                    "vessel": self.other_vessel("1234004").id,
+                    "eta": "2026-12-05T08:00:00Z",
+                    "etd": "2026-12-01T08:00:00Z",
+                },
+                format="json",
+            )
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertIn("Departure must be after arrival", str(r.json()))
+
     def test_api_rejects_future_actual_arrival(self):
         r = self.client.patch(
             f"/api/vessel-calls/{self.call.id}/",
@@ -319,4 +403,4 @@ class AuthTests(APITestCase):
 
     def test_a_made_up_token_is_refused(self):
         self.client.credentials(HTTP_AUTHORIZATION="Token not-a-real-token")
-        self.assertEqual(self.client.get("/api/containers/").status_code, 401)  
+        self.assertEqual(self.client.get("/api/containers/").status_code, 401) 

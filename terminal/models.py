@@ -50,6 +50,17 @@ class VesselCall(models.Model):
         max_length=10, choices=Status.choices, default=Status.EXPECTED
     )
 
+    class Meta:
+        # Enforced by the database itself, even if clean() is skipped.
+        # The berth-overlap guard is PostgreSQL-only, so it lives in
+        # migration 0004 rather than here.
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(etd__gt=models.F("eta")),
+                name="vesselcall_departure_after_arrival",
+            ),
+        ]
+
     def clean(self):
         # Guards: if a field failed form validation it is None here, and
         # comparing None with a date would crash instead of showing a message.
@@ -184,7 +195,7 @@ class GateEvent(models.Model):
                 raise ValidationError(
                     "Only a container that is in the yard can gate out."
                 )
-  
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         # atomic = both changes succeed together, or neither is saved
@@ -210,4 +221,4 @@ class Tariff(models.Model):
     daily_rate_kes = models.DecimalField(max_digits=8, decimal_places=2)
 
     def __str__(self):
-        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day" 
+        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day"  

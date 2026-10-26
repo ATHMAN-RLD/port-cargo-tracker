@@ -1,6 +1,7 @@
 import copy
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 
 from .models import (
@@ -57,6 +58,24 @@ class VesselCallSerializer(CleanedModelSerializer):
         model = VesselCall
         fields = "__all__"
 
+    def save(self, **kwargs):
+        # clean() already catches ordinary clashes. This is the safety net for
+        # two requests passing clean() at the same instant: the database
+        # constraints refuse the second one, and we turn that into a normal
+        # 400 message instead of a server error.
+        try:
+            with transaction.atomic():
+                return super().save(**kwargs)
+        except IntegrityError as exc:
+            text = str(exc)
+            if "no_overlapping_berth_bookings" in text:
+                message = "This berth is already booked in that window."
+            elif "vesselcall_departure_after_arrival" in text:
+                message = "Departure must be after arrival."
+            else:
+                raise
+            raise serializers.ValidationError({"non_field_errors": [message]})
+
 
 class YardSlotSerializer(serializers.ModelSerializer):
     label = serializers.CharField(source="__str__", read_only=True)
@@ -91,4 +110,4 @@ class GateEventSerializer(CleanedModelSerializer):
     class Meta:
         model = GateEvent
         fields = "__all__"
-        read_only_fields = ("timestamp",)  
+        read_only_fields = ("timestamp",) 
