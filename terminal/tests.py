@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APITestCase
@@ -86,6 +87,44 @@ class StorageChargeTests(TestCase):
         self.assertEqual(charge["days_stored"], 8)
         self.assertEqual(charge["chargeable_days"], 5)
         self.assertEqual(float(charge["amount_kes"]), 10000.0)
+
+
+class ActualTimeRulesTests(TestCase):
+    """ATA/ATD record what really happened, so they have rules too."""
+
+    def setUp(self):
+        self.vessel, self.berth, self.call, _ = make_world()
+
+    def check(self, **changes):
+        for name, value in changes.items():
+            setattr(self.call, name, value)
+        self.call.clean()
+
+    def test_valid_actual_times_pass(self):
+        now = timezone.now()
+        self.check(ata=now - timedelta(days=2), atd=now - timedelta(days=1))
+
+    def test_actual_arrival_in_future_is_rejected(self):
+        with self.assertRaisesMessage(ValidationError, "cannot be in the future"):
+            self.check(ata=timezone.now() + timedelta(days=1))
+
+    def test_actual_departure_in_future_is_rejected(self):
+        now = timezone.now()
+        with self.assertRaisesMessage(ValidationError, "cannot be in the future"):
+            self.check(ata=now - timedelta(days=1), atd=now + timedelta(days=1))
+
+    def test_departure_before_arrival_is_rejected(self):
+        now = timezone.now()
+        with self.assertRaisesMessage(ValidationError, "must be after actual arrival"):
+            self.check(ata=now - timedelta(days=1), atd=now - timedelta(days=2))
+
+    def test_departure_without_arrival_is_rejected(self):
+        with self.assertRaisesMessage(ValidationError, "needs an actual arrival"):
+            self.check(atd=timezone.now() - timedelta(days=1))
+
+    def test_blank_eta_does_not_crash(self):
+        # A blank field used to cause a TypeError instead of a clean message
+        self.check(eta=None)
 
 
 class GateRulesTests(TestCase):
@@ -207,6 +246,15 @@ class ApiTests(APITestCase):
         self.assertIn("in the yard", str(again.json()))
         self.assertEqual(GateEvent.objects.count(), 1)
 
+    def test_api_rejects_future_actual_arrival(self):
+        r = self.client.patch(
+            f"/api/vessel-calls/{self.call.id}/",
+            {"ata": (timezone.now() + timedelta(days=3)).isoformat()},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertIn("future", str(r.json()))
+
     def test_protected_data_cannot_be_edited_through_api(self):
         url = f"/api/containers/{self.box.id}/"
         self.assertEqual(
@@ -221,4 +269,4 @@ class ApiTests(APITestCase):
         )
         self.assertEqual(
             self.client.delete(f"/api/gate-events/{event.id}/").status_code, 405
-        )  
+        ) 

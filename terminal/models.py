@@ -51,9 +51,28 @@ class VesselCall(models.Model):
     )
 
     def clean(self):
-        if self.etd <= self.eta:
+        # Guards: if a field failed form validation it is None here, and
+        # comparing None with a date would crash instead of showing a message.
+        if self.eta and self.etd and self.etd <= self.eta:
             raise ValidationError("Departure must be after arrival.")
-        if self.berth_id:
+
+        # Actual times describe things that already happened.
+        now = timezone.now()
+        if self.ata and self.ata > now:
+            raise ValidationError("Actual arrival cannot be in the future.")
+        if self.atd:
+            if not self.ata:
+                raise ValidationError(
+                    "Actual departure needs an actual arrival first."
+                )
+            if self.atd <= self.ata:
+                raise ValidationError(
+                    "Actual departure must be after actual arrival."
+                )
+            if self.atd > now:
+                raise ValidationError("Actual departure cannot be in the future.")
+
+        if self.berth_id and self.eta and self.etd:
             clash = VesselCall.objects.filter(
                 berth=self.berth, eta__lt=self.etd, etd__gt=self.eta
             ).exclude(pk=self.pk)
@@ -165,7 +184,7 @@ class GateEvent(models.Model):
                 raise ValidationError(
                     "Only a container that is in the yard can gate out."
                 )
-
+  
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         # atomic = both changes succeed together, or neither is saved
@@ -191,4 +210,4 @@ class Tariff(models.Model):
     daily_rate_kes = models.DecimalField(max_digits=8, decimal_places=2)
 
     def __str__(self):
-        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day"  
+        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day" 
