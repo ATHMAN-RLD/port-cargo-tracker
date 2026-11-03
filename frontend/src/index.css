@@ -64,14 +64,52 @@ h2 {
   margin: 24px 0 12px;
 }
 
+h3 {
+  font-size: 1rem;
+  margin: 28px 0 10px;
+}
+
+/* ---- header and menu bar ---- */
+
 .topbar {
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--line);
 }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 8px 14px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px; /* sits on top of the header line */
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---- login ---- */
 
 .card {
   background: var(--surface);
@@ -134,6 +172,8 @@ button {
 }
 
 button.link {
+  flex: none;
+  white-space: nowrap;
   padding: 6px 10px;
   color: var(--accent);
   background: none;
@@ -152,6 +192,8 @@ button.link {
   background: var(--danger-bg);
   border-radius: 6px;
 }
+
+/* ---- tables ---- */
 
 .table-wrap {
   overflow-x: auto;
@@ -200,6 +242,8 @@ tbody tr:last-child td {
   color: var(--muted);
 }
 
+/* ---- status badges (containers and bookings) ---- */
+
 .badge {
   display: inline-block;
   padding: 2px 10px;
@@ -208,17 +252,115 @@ tbody tr:last-child td {
   border-radius: 999px;
 }
 
-.badge.in_yard {
+.badge.in_yard,
+.badge.alongside,
+.bar.alongside {
   color: var(--yard-text);
   background: var(--yard-bg);
 }
 
-.badge.gated_out {
+.badge.gated_out,
+.badge.departed,
+.bar.departed {
   color: var(--out-text);
   background: var(--out-bg);
 }
 
-.badge.on_vessel {
+.badge.on_vessel,
+.badge.expected,
+.bar.expected {
   color: var(--vessel-text);
   background: var(--vessel-bg);
-} 
+}
+
+/* ---- berth timeline ---- */
+
+.timeline {
+  margin-top: 12px;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.timeline-inner {
+  --label-width: 120px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.t-row {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+}
+
+.t-row:last-child {
+  border-bottom: 0;
+}
+
+/* The berth names stay in view while the timeline scrolls sideways. */
+.t-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: 0 0 var(--label-width);
+  padding: 14px 12px;
+  font-weight: 600;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+
+.t-head .t-label {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The track has one thin vertical line at the end of every day. (At the end,
+   not the start, so the first one does not double up with the label border.) */
+.t-track {
+  position: relative;
+  flex: none;
+  height: 56px;
+  background-image: linear-gradient(to left, var(--line) 1px, transparent 1px);
+  background-size: var(--day-width) 100%;
+}
+
+.t-head .t-track {
+  height: 34px;
+}
+
+.t-day {
+  position: absolute;
+  top: 0;
+  padding: 8px 8px 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bar {
+  position: absolute;
+  top: 11px;
+  height: 34px;
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 32px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+
+.now-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 2px;
+  background: var(--danger);
+}  
