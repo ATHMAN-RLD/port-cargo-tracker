@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { clearToken, getToken, saveToken } from './api.js'
 import BerthSchedule from './BerthSchedule.jsx'
 import Containers from './Containers.jsx'
+import Gate from './Gate.jsx'
 import Login from './Login.jsx'
 
 // The pages in the menu bar. To add a page later: add a line here
@@ -9,6 +10,7 @@ import Login from './Login.jsx'
 const PAGES = [
   { id: 'containers', label: 'Containers' },
   { id: 'berths', label: 'Berth schedule' },
+  { id: 'gate', label: 'Gate' },
 ]
 
 function App() {
@@ -68,6 +70,9 @@ function App() {
           )}
           {page === 'berths' && (
             <BerthSchedule token={token} onUnauthorized={handleLogout} />
+          )}
+          {page === 'gate' && (
+            <Gate token={token} onUnauthorized={handleLogout} />
           )}
         </>
       ) : (
