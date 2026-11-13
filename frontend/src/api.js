@@ -112,6 +112,10 @@ const FIELD_LABELS = {
   direction: 'Direction',
   truck_plate: 'Truck plate',
   appointment_ref: 'Appointment reference',
+  vessel: 'Vessel',
+  berth: 'Berth',
+  eta: 'Planned arrival',
+  etd: 'Planned departure',
 }
 
 // Turn a refused request into a list of sentences a person can read.

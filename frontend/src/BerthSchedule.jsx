@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from './api.js'
+import BookingForm from './BookingForm.jsx'
+import { formatTime } from './format.js'
 
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
@@ -16,26 +18,14 @@ const STATUS_LABELS = {
   DEPARTED: 'Departed',
 }
 
-// The API stores times in UTC. These two show them in Nairobi time.
-const timeFormat = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Africa/Nairobi',
-  day: '2-digit',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
-
+// The API stores times in UTC. The day headings are shown in Nairobi time.
+// (formatTime, for exact times, lives in format.js.)
 const dayFormat = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Africa/Nairobi',
   weekday: 'short',
   day: 'numeric',
   month: 'short',
 })
-
-function formatTime(iso) {
-  return iso ? timeFormat.format(new Date(iso)) : '-'
-}
 
 // Midnight (Nairobi time) at the start of the day that contains this moment.
 function startOfDay(ms) {
@@ -182,19 +172,25 @@ function BerthSchedule({ token, onUnauthorized }) {
   // null means "still loading"
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  // Adding 1 to this number makes the effect below run again: a reload.
+  const [reloadCount, setReloadCount] = useState(0)
 
   useEffect(() => {
     let cancelled = false
 
-    // Two requests at once: the berths, and the bookings.
+    // Three requests at once: the berths, the bookings, and the vessels
+    // (the booking form needs them for its dropdown).
     Promise.all([
       apiGet('/api/berths/', token),
       apiGet('/api/vessel-calls/', token),
+      apiGet('/api/vessels/', token),
     ])
-      .then(([berths, calls]) => {
+      .then(([berths, calls, vessels]) => {
+        if (cancelled) return
         // "now" is taken here, when the data arrives, so the red line
         // matches the moment the data was fetched.
-        if (!cancelled) setData({ berths, calls, now: Date.now() })
+        setData({ berths, calls, vessels, now: Date.now() })
+        setError('')
       })
       .catch((err) => {
         if (cancelled) return
@@ -208,31 +204,48 @@ function BerthSchedule({ token, onUnauthorized }) {
     return () => {
       cancelled = true
     }
-  }, [token, onUnauthorized])
+  }, [token, onUnauthorized, reloadCount])
 
   if (error) return <p className="notice error">{error}</p>
   if (data === null) return <p className="notice">Loading the schedule...</p>
-  if (data.calls.length === 0) {
-    return (
-      <p className="notice">No bookings yet. Add a vessel call in the admin.</p>
-    )
-  }
 
   const rows = groupByBerth(data.berths, data.calls)
+  const hasBookings = data.calls.length > 0
 
   return (
     <>
-      <p className="notice">
-        Bars run from planned arrival to planned departure. Times are Nairobi
-        time (EAT). The red line is now.
-      </p>
-      <Timeline rows={rows} calls={data.calls} now={data.now} />
-      <h3>All bookings</h3>
-      <p className="notice">
-        Each time is the plan. The actual time appears underneath once it has
-        happened.
-      </p>
-      <CallsTable rows={rows} />
+      {hasBookings ? (
+        <>
+          <p className="notice">
+            Bars run from planned arrival to planned departure. Times are
+            Nairobi time (EAT). The red line is now.
+          </p>
+          <Timeline rows={rows} calls={data.calls} now={data.now} />
+        </>
+      ) : (
+        <p className="notice">
+          No bookings yet. Use the form below to make the first one.
+        </p>
+      )}
+
+      <BookingForm
+        token={token}
+        vessels={data.vessels}
+        berths={data.berths}
+        onUnauthorized={onUnauthorized}
+        onChanged={() => setReloadCount((count) => count + 1)}
+      />
+
+      {hasBookings && (
+        <>
+          <h3>All bookings</h3>
+          <p className="notice">
+            Each time is the plan. The actual time appears underneath once it
+            has happened.
+          </p>
+          <CallsTable rows={rows} />
+        </>
+      )}
     </>
   )
 }

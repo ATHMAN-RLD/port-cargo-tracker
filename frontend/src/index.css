@@ -16,6 +16,7 @@
   --vessel-text: #7a5300;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
+  color-scheme: light dark; /* date pickers and scrollbars follow the theme */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -87,6 +88,7 @@ h3 {
   display: flex;
   gap: 4px;
   overflow-x: auto;
+  margin-bottom: -1px; /* the whole row sits on top of the header line */
 }
 
 .tab {
@@ -95,7 +97,6 @@ h3 {
   background: none;
   border: 0;
   border-bottom: 3px solid transparent;
-  margin-bottom: -1px; /* sits on top of the header line */
   font-weight: 600;
   white-space: nowrap;
 }
