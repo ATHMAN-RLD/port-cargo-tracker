@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { clearToken, getToken, saveToken } from './api.js'
+import { Icon, PortScene } from './Art.jsx'
 import BerthSchedule from './BerthSchedule.jsx'
 import Containers from './Containers.jsx'
 import Gate from './Gate.jsx'
@@ -8,9 +9,24 @@ import Login from './Login.jsx'
 // The pages in the menu bar. To add a page later: add a line here
 // and one more case below.
 const PAGES = [
-  { id: 'containers', label: 'Containers' },
-  { id: 'berths', label: 'Berth schedule' },
-  { id: 'gate', label: 'Gate' },
+  {
+    id: 'containers',
+    label: 'Containers',
+    icon: 'containers',
+    subtitle: 'Every container in the terminal: where it is and what it owes.',
+  },
+  {
+    id: 'berths',
+    label: 'Berth schedule',
+    icon: 'berth',
+    subtitle: 'Which vessel is at which berth, and when.',
+  },
+  {
+    id: 'gate',
+    label: 'Gate',
+    icon: 'gate',
+    subtitle: 'Release containers to the trucks that collect them.',
+  },
 ]
 
 function App() {
@@ -34,19 +50,36 @@ function App() {
   const currentPage = PAGES.find((item) => item.id === page)
 
   return (
-    <main>
-      <header className="topbar">
-        <div className="topbar-row">
-          <h1>Mombasa Port Cargo Tracker</h1>
+    <div className="app">
+      {/* The banner: a sky, a ship and a crane, with the app's name on top. */}
+      <header className={token ? 'hero' : 'hero hero-tall'}>
+        <PortScene />
+        <div className="wrap hero-inner">
+          <div className="brand">
+            <span className="brand-mark">
+              <Icon name="anchor" />
+            </span>
+            <div>
+              <h1>Mombasa Port Cargo Tracker</h1>
+              <p className="tagline">
+                {token
+                  ? 'Terminal operations'
+                  : 'Berths, containers and the gate, in one place.'}
+              </p>
+            </div>
+          </div>
           {token && (
             <button type="button" className="link" onClick={handleLogout}>
+              <Icon name="logout" />
               Log out
             </button>
           )}
         </div>
+      </header>
 
-        {token && (
-          <nav className="tabs" aria-label="Main">
+      {token && (
+        <div className="tabbar">
+          <nav className="wrap tabs" aria-label="Main">
             {PAGES.map((item) => (
               <button
                 key={item.id}
@@ -55,30 +88,41 @@ function App() {
                 aria-current={item.id === page ? 'page' : undefined}
                 onClick={() => setPage(item.id)}
               >
+                <Icon name={item.icon} />
                 {item.label}
               </button>
             ))}
           </nav>
-        )}
-      </header>
-
-      {token ? (
-        <>
-          <h2>{currentPage.label}</h2>
-          {page === 'containers' && (
-            <Containers token={token} onUnauthorized={handleLogout} />
-          )}
-          {page === 'berths' && (
-            <BerthSchedule token={token} onUnauthorized={handleLogout} />
-          )}
-          {page === 'gate' && (
-            <Gate token={token} onUnauthorized={handleLogout} />
-          )}
-        </>
-      ) : (
-        <Login onLogin={handleLogin} />
+        </div>
       )}
-    </main>
+
+      <main className={token ? 'wrap' : 'wrap over-hero'}>
+        {token ? (
+          <>
+            <div className="page-head">
+              <span className="page-icon">
+                <Icon name={currentPage.icon} />
+              </span>
+              <div>
+                <h2>{currentPage.label}</h2>
+                <p>{currentPage.subtitle}</p>
+              </div>
+            </div>
+            {page === 'containers' && (
+              <Containers token={token} onUnauthorized={handleLogout} />
+            )}
+            {page === 'berths' && (
+              <BerthSchedule token={token} onUnauthorized={handleLogout} />
+            )}
+            {page === 'gate' && (
+              <Gate token={token} onUnauthorized={handleLogout} />
+            )}
+          </>
+        ) : (
+          <Login onLogin={handleLogin} />
+        )}
+      </main>
+    </div>
   )
 }
 

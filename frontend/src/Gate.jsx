@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { apiGet, apiPost, errorMessages } from './api.js'
+import { EmptyState } from './Art.jsx'
 import { formatTime, money } from './format.js'
+import Stats from './Stats.jsx'
 
 const DIRECTION_LABELS = { IN: 'Gate in', OUT: 'Gate out' }
 
@@ -141,7 +143,7 @@ function GateOutForm({ token, containers, onUnauthorized, onChanged }) {
 
 function EventsTable({ events }) {
   if (events.length === 0) {
-    return <p className="notice">No gate events yet.</p>
+    return <EmptyState>No gate events yet.</EmptyState>
   }
 
   return (
@@ -219,8 +221,18 @@ function Gate({ token, onUnauthorized }) {
   if (error) return <p className="notice error">{error}</p>
   if (data === null) return <p className="notice">Loading the gate...</p>
 
+  const inYardCount = data.containers.filter(
+    (container) => container.status === 'IN_YARD',
+  ).length
+
   return (
     <>
+      <Stats
+        items={[
+          { label: 'In the yard now', value: inYardCount, tone: 'teal' },
+          { label: 'Gate events logged', value: data.events.length, tone: 'blue' },
+        ]}
+      />
       <GateOutForm
         token={token}
         containers={data.containers}
@@ -233,4 +245,4 @@ function Gate({ token, onUnauthorized }) {
   )
 }
 
-export default Gate 
+export default Gate  

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet, apiPost, errorMessages } from './api.js'
 import BookingForm from './BookingForm.jsx'
+import Stats from './Stats.jsx'
 import { formatTime } from './format.js'
 
 const HOUR = 60 * 60 * 1000
@@ -229,6 +230,10 @@ function CallsTable({ rows, token, onUnauthorized, onChanged }) {
   )
 }
 
+function countByStatus(calls, status) {
+  return calls.filter((call) => call.status === status).length
+}
+
 function BerthSchedule({ token, onUnauthorized }) {
   // null means "still loading"
   const [data, setData] = useState(null)
@@ -277,6 +282,13 @@ function BerthSchedule({ token, onUnauthorized }) {
     <>
       {hasBookings ? (
         <>
+          <Stats
+            items={[
+              { label: 'Expected', value: countByStatus(data.calls, 'EXPECTED'), tone: 'amber' },
+              { label: 'Alongside now', value: countByStatus(data.calls, 'ALONGSIDE'), tone: 'teal' },
+              { label: 'Departed', value: countByStatus(data.calls, 'DEPARTED'), tone: 'slate' },
+            ]}
+          />
           <p className="notice">
             Bars run from planned arrival to planned departure. Times are
             Nairobi time (EAT). The red line is now.
@@ -317,4 +329,4 @@ function BerthSchedule({ token, onUnauthorized }) {
   )
 }
 
-export default BerthSchedule
+export default BerthSchedule  

@@ -23,6 +23,7 @@ function Login({ onLogin }) {
   return (
     <form className="card login" onSubmit={handleSubmit}>
       <h2>Log in</h2>
+      <p className="login-lead">Sign in to manage berths, containers and the gate.</p>
 
       <label htmlFor="username">Username</label>
       <input

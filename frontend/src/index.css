@@ -1,19 +1,70 @@
+/* =====================================================================
+   Mombasa Port Cargo Tracker: look and feel.
+   All colours live in the variables below, so the light and dark themes
+   are just two sets of values. Nothing else in this file names a colour
+   that should change with the theme.
+   ===================================================================== */
+
 :root {
-  --bg: #f4f6f8;
+  /* page */
+  --bg: #eef3f7;
   --surface: #ffffff;
-  --text: #14232e;
-  --muted: #5d6f7c;
-  --line: #dbe3e9;
-  --accent: #0b6e8a;
+  --surface-2: #f6f9fb;
+  --text: #0f2233;
+  --muted: #5a6e7e;
+  --line: #dde6ed;
+  --shadow: 0 1px 2px rgb(15 34 51 / 6%), 0 6px 18px rgb(15 34 51 / 6%);
+
+  /* brand */
+  --accent: #0b7a9a;
+  --accent-strong: #075d78;
+  --accent-soft: #e0f2f7;
   --accent-text: #ffffff;
+  --orange: #e8772e;
+
+  /* problems */
   --danger: #b3261e;
   --danger-bg: #fdecea;
-  --yard-bg: #d9f0ec;
-  --yard-text: #0b5a4f;
-  --out-bg: #e6e9ec;
-  --out-text: #44525c;
-  --vessel-bg: #fdf0d2;
-  --vessel-text: #7a5300;
+
+  /* status colours: a soft background and a strong text colour for badges,
+     and a solid colour (with its text) for the bars on the timeline */
+  --expected-bg: #fdf0d2;
+  --expected-text: #7a5300;
+  --expected-solid: #f2b134;
+  --expected-on: #3b2a00;
+  --alongside-bg: #d6f1e8;
+  --alongside-text: #0b5a45;
+  --alongside-solid: #1a9b7b;
+  --alongside-on: #ffffff;
+  --departed-bg: #e4e9ee;
+  --departed-text: #44525c;
+  --departed-solid: #8497a6;
+  --departed-on: #ffffff;
+  --gate-in-bg: #d6f1e8;
+  --gate-in-text: #0b5a45;
+  --gate-out-bg: #dbe8fb;
+  --gate-out-text: #1d4a9a;
+
+  /* the banner picture */
+  --sky-1: #0a2a43;
+  --sky-2: #1d6a8a;
+  --sky-3: #f2a65a;
+  --sun: #ffe3a8;
+  --sun-glow: rgb(255 214 140 / 35%);
+  --sea-1: #14506e;
+  --sea-2: #0f4561;
+  --sea-3: #0a3550;
+  --hull: #1d2f3f;
+  --hull-stripe: #c8452f;
+  --ship-white: #f1f4f7;
+  --ship-glass: #2b4a63;
+  --funnel: #c8452f;
+  --funnel-band: #f1f4f7;
+  --quay: #25415a;
+  --quay-top: #3a5a76;
+  --crane: #f0a030;
+  --gull: rgb(255 255 255 / 85%);
+
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   color-scheme: light dark; /* date pickers and scrollbars follow the theme */
@@ -21,21 +72,53 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1a22;
-    --surface: #17262f;
-    --text: #e6edf2;
-    --muted: #9db0bd;
-    --line: #2a3d49;
-    --accent: #4cb4d1;
-    --accent-text: #08202a;
+    --bg: #0a141c;
+    --surface: #121f29;
+    --surface-2: #17262f;
+    --text: #e8eff4;
+    --muted: #93a7b5;
+    --line: #24384a;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 18px rgb(0 0 0 / 30%);
+
+    --accent: #4cb9d6;
+    --accent-strong: #7fd0e6;
+    --accent-soft: #123845;
+    --accent-text: #062230;
+
     --danger: #ff8a80;
     --danger-bg: #3a1c1a;
-    --yard-bg: #12413a;
-    --yard-text: #8fe0d1;
-    --out-bg: #263640;
-    --out-text: #b7c5cf;
-    --vessel-bg: #4a3a12;
-    --vessel-text: #f2d28a;
+
+    --expected-bg: #4a3a12;
+    --expected-text: #f2d28a;
+    --expected-solid: #d9a21f;
+    --expected-on: #2a1d00;
+    --alongside-bg: #12413a;
+    --alongside-text: #8fe0d1;
+    --alongside-solid: #22b08e;
+    --alongside-on: #04251d;
+    --departed-bg: #263640;
+    --departed-text: #b7c5cf;
+    --departed-solid: #5f7384;
+    --departed-on: #f1f4f7;
+    --gate-in-bg: #12413a;
+    --gate-in-text: #8fe0d1;
+    --gate-out-bg: #1b3358;
+    --gate-out-text: #a9c8f5;
+
+    --sky-1: #040b11;
+    --sky-2: #0b2f45;
+    --sky-3: #2a5a73;
+    --sun: #e3edf3;
+    --sun-glow: rgb(200 225 240 / 18%);
+    --sea-1: #0a3048;
+    --sea-2: #082739;
+    --sea-3: #051b29;
+    --hull: #0f1a24;
+    --ship-white: #c9d3db;
+    --ship-glass: #20384c;
+    --quay: #142c40;
+    --quay-top: #24445d;
+    --gull: rgb(255 255 255 / 55%);
   }
 }
 
@@ -49,56 +132,213 @@ body {
   color: var(--text);
 }
 
-main {
-  max-width: 960px;
+/* The content column. The banner and the menu use it too, so everything
+   lines up on the same left edge. */
+.wrap {
+  width: 100%;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+main.wrap {
+  padding-top: 24px;
+  padding-bottom: 56px;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
 }
 
 h1 {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
+  line-height: 1.2;
   margin: 0;
 }
 
 h2 {
-  font-size: 1.1rem;
-  margin: 24px 0 12px;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin: 0;
 }
 
 h3 {
-  font-size: 1rem;
-  margin: 28px 0 10px;
+  font-size: 1.05rem;
+  margin: 32px 0 10px;
 }
 
-/* ---- header and menu bar ---- */
+/* ---- the banner ---- */
 
-.topbar {
-  border-bottom: 1px solid var(--line);
+.hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 210px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%);
 }
 
-.topbar-row {
+.hero-tall {
+  min-height: 330px;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.scene .sun {
+  fill: var(--sun);
+}
+.scene .sun-glow {
+  fill: var(--sun-glow);
+}
+.scene .gull {
+  stroke: var(--gull);
+}
+.scene .sea-back {
+  fill: var(--sea-1);
+}
+.scene .sea-mid {
+  fill: var(--sea-2);
+}
+.scene .sea-front {
+  fill: var(--sea-3);
+}
+.scene .hull {
+  fill: var(--hull);
+}
+.scene .hull-stripe {
+  fill: var(--hull-stripe);
+}
+.scene .ship-white {
+  fill: var(--ship-white);
+}
+.scene .ship-glass {
+  fill: var(--ship-glass);
+}
+.scene .funnel {
+  fill: var(--funnel);
+}
+.scene .funnel-band {
+  fill: var(--funnel-band);
+}
+.scene .quay {
+  fill: var(--quay);
+}
+.scene .quay-top {
+  fill: var(--quay-top);
+}
+.scene .crane rect {
+  fill: var(--crane);
+}
+.scene .crane line {
+  stroke: var(--crane);
+}
+
+/* The name sits on top of the picture. A soft dark fade behind the text
+   keeps it readable over any part of the sky. */
+.hero-inner {
+  position: relative;
+  z-index: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 16px;
+  padding-top: 22px;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 1;
+  height: 150px;
+  background: linear-gradient(180deg, rgb(4 14 22 / 72%), transparent);
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #fff;
+  background: var(--orange);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+}
+
+.brand-mark .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.tagline {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: rgb(255 255 255 / 90%);
+  text-shadow: 0 1px 6px rgb(0 0 0 / 60%);
+}
+
+.hero h1 {
+  color: #fff;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 40%);
+}
+
+.hero-tall .hero-inner {
+  padding-top: 40px;
+}
+
+.hero-tall h1 {
+  font-size: 1.7rem;
+}
+
+.hero-tall .tagline {
+  font-size: 1rem;
+}
+
+/* ---- menu bar ---- */
+
+.tabbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgb(15 34 51 / 6%);
 }
 
 .tabs {
   display: flex;
   gap: 4px;
   overflow-x: auto;
-  margin-bottom: -1px; /* the whole row sits on top of the header line */
 }
 
 .tab {
-  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 14px 11px;
   color: var(--muted);
   background: none;
   border: 0;
   border-bottom: 3px solid transparent;
   font-weight: 600;
   white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .tab:hover {
@@ -110,28 +350,68 @@ h3 {
   border-bottom-color: var(--accent);
 }
 
-/* ---- login ---- */
+/* ---- page heading ---- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.page-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 12px;
+}
+
+.page-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+/* ---- cards, forms ---- */
 
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: var(--shadow);
 }
 
 .login {
-  max-width: 360px;
-  margin-top: 32px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+main.over-hero {
+  /* only on the login page: an explicit class, not a neighbour selector,
+     because browsers can miss restyling when the menu bar appears */
+  margin-top: -90px; /* the login card overlaps the banner */
+  position: relative;
+  z-index: 2;
 }
 
 .login h2 {
   margin-top: 0;
 }
 
+.login-lead {
+  margin: 4px 0 8px;
+  color: var(--muted);
+}
+
 label {
   display: block;
-  margin: 12px 0 4px;
-  font-size: 0.9rem;
+  margin: 14px 0 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
@@ -141,9 +421,15 @@ select {
   padding: 10px 12px;
   font: inherit;
   color: var(--text);
-  background: var(--bg);
+  background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:hover,
+select:hover {
+  border-color: var(--muted);
 }
 
 input:focus-visible,
@@ -161,13 +447,25 @@ button {
 .login button,
 button.primary {
   width: 100%;
-  margin-top: 16px;
-  padding: 10px;
+  margin-top: 18px;
+  padding: 11px;
   color: var(--accent-text);
   background: var(--accent);
   border: 0;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgb(11 122 154 / 30%);
+  transition: background 0.15s, transform 0.05s;
+}
+
+.login button:hover:not(:disabled),
+button.primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.login button:active:not(:disabled),
+button.primary:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .login button:disabled,
@@ -176,15 +474,54 @@ button.primary:disabled {
   cursor: wait;
 }
 
+/* the log out button sits on the banner, so it is a frosted-glass pill */
 button.link {
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
-  padding: 6px 10px;
-  color: var(--accent);
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  padding: 7px 12px;
+  color: #fff;
+  background: rgb(255 255 255 / 14%);
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: 999px;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
 }
+
+button.link:hover {
+  background: rgb(255 255 255 / 26%);
+}
+
+button.link .icon {
+  width: 16px;
+  height: 16px;
+}
+
+button.small {
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+}
+
+button.small:hover:not(:disabled) {
+  color: var(--accent-text);
+  background: var(--accent);
+}
+
+button.small:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* ---- messages ---- */
 
 .notice {
   margin: 12px 0 0;
@@ -192,10 +529,87 @@ button.link {
 }
 
 .notice.error {
-  padding: 8px 12px;
+  padding: 10px 14px;
   color: var(--danger);
   background: var(--danger-bg);
-  border-radius: 6px;
+  border-radius: 8px;
+}
+
+.notice.error p {
+  margin: 0;
+}
+
+.notice.success {
+  padding: 10px 14px;
+  color: var(--alongside-text);
+  background: var(--alongside-bg);
+  border-radius: 8px;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  padding: 28px 16px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+}
+
+.empty .notice {
+  margin-top: 8px;
+}
+
+.empty-ground {
+  fill: var(--line);
+}
+
+/* ---- summary cards ---- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--stat-color, var(--accent));
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.stat.teal {
+  --stat-color: var(--alongside-solid);
+}
+.stat.amber {
+  --stat-color: var(--expected-solid);
+}
+.stat.slate {
+  --stat-color: var(--departed-solid);
+}
+.stat.blue {
+  --stat-color: #2d6cdf;
+}
+.stat.orange {
+  --stat-color: var(--orange);
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 /* ---- tables ---- */
@@ -204,7 +618,8 @@ button.link {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
 table {
@@ -215,22 +630,30 @@ table {
 
 th,
 td {
-  padding: 10px 14px;
+  padding: 12px 16px;
   text-align: left;
   white-space: nowrap;
   border-bottom: 1px solid var(--line);
 }
 
+thead th {
+  background: var(--surface-2);
+}
+
 th {
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 tbody tr:last-child td {
   border-bottom: 0;
+}
+
+tbody tr:hover td {
+  background: var(--surface-2);
 }
 
 .num {
@@ -247,37 +670,58 @@ tbody tr:last-child td {
   color: var(--muted);
 }
 
-/* ---- status badges (containers and bookings) ---- */
+.box-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.box-icon {
+  flex: none;
+}
+
+/* ---- status badges (containers, bookings, gate events) ---- */
 
 .badge {
-  display: inline-block;
-  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 11px;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 999px;
+}
+
+.badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 50%;
 }
 
 .badge.in_yard,
 .badge.in,
-.badge.alongside,
-.bar.alongside {
-  color: var(--yard-text);
-  background: var(--yard-bg);
+.badge.alongside {
+  color: var(--alongside-text);
+  background: var(--alongside-bg);
 }
 
 .badge.gated_out,
-.badge.out,
-.badge.departed,
-.bar.departed {
-  color: var(--out-text);
-  background: var(--out-bg);
+.badge.departed {
+  color: var(--departed-text);
+  background: var(--departed-bg);
+}
+
+.badge.out {
+  color: var(--gate-out-text);
+  background: var(--gate-out-bg);
 }
 
 .badge.on_vessel,
-.badge.expected,
-.bar.expected {
-  color: var(--vessel-text);
-  background: var(--vessel-bg);
+.badge.expected {
+  color: var(--expected-text);
+  background: var(--expected-bg);
 }
 
 /* ---- berth timeline ---- */
@@ -287,7 +731,8 @@ tbody tr:last-child td {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
 .timeline-inner {
@@ -312,17 +757,25 @@ tbody tr:last-child td {
   z-index: 2;
   flex: 0 0 var(--label-width);
   padding: 14px 12px;
-  font-weight: 600;
+  font-weight: 700;
   background: var(--surface);
   border-right: 1px solid var(--line);
 }
 
 .t-head .t-label {
   padding: 8px 12px;
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.t-head {
+  background: var(--surface-2);
+}
+
+.t-head .t-label {
+  background: var(--surface-2);
 }
 
 /* The track has one thin vertical line at the end of every day. (At the end,
@@ -344,23 +797,41 @@ tbody tr:last-child td {
   top: 0;
   padding: 8px 8px 0;
   font-size: 0.8rem;
+  font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
 }
 
+/* Each booking is a little ship: a solid bar with a pointed bow
+   on the right, in the colour of its status. */
 .bar {
   position: absolute;
   top: 11px;
   height: 34px;
-  padding: 0 8px;
+  padding: 0 22px 0 10px;
   overflow: hidden;
   font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 32px;
+  font-weight: 700;
+  line-height: 34px;
   white-space: nowrap;
   text-overflow: ellipsis;
-  border: 1px solid currentColor;
-  border-radius: 6px;
+  border-radius: 6px 0 0 6px;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+}
+
+.bar.expected {
+  color: var(--expected-on);
+  background: var(--expected-solid);
+}
+
+.bar.alongside {
+  color: var(--alongside-on);
+  background: var(--alongside-solid);
+}
+
+.bar.departed {
+  color: var(--departed-on);
+  background: var(--departed-solid);
 }
 
 .now-line {
@@ -372,7 +843,7 @@ tbody tr:last-child td {
   background: var(--danger);
 }
 
-/* ---- gate form ---- */
+/* ---- gate and booking forms ---- */
 
 .form-card {
   max-width: 480px;
@@ -385,35 +856,44 @@ tbody tr:last-child td {
 
 .summary {
   margin: 10px 0 0;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 0.9rem;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 8px;
 }
 
-.notice.error p {
-  margin: 0;
-}
+/* ---- phones ---- */
 
-button.small {
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  color: var(--accent);
-  background: none;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  font-weight: 600;
-}
+@media (max-width: 520px) {
+  .tab .icon {
+    display: none; /* the three labels need all the room */
+  }
 
-button.small:disabled {
-  opacity: 0.5;
-  cursor: wait;
-}
+  .tab {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 
-.notice.success {
-  padding: 8px 12px;
-  color: var(--yard-text);
-  background: var(--yard-bg);
-  border-radius: 6px;
-}  
+  .hero {
+    min-height: 190px;
+  }
+
+  .hero-tall {
+    min-height: 300px;
+  }
+
+  .hero-tall h1 {
+    font-size: 1.4rem;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+  }
+} 
