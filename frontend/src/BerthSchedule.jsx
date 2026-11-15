@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { apiGet } from './api.js'
+import { apiGet, apiPost, errorMessages } from './api.js'
 import BookingForm from './BookingForm.jsx'
 import { formatTime } from './format.js'
 
@@ -129,42 +129,103 @@ function PlannedAndActual({ planned, actual }) {
   )
 }
 
-function CallsTable({ rows }) {
+function CallsTable({ rows, token, onUnauthorized, onChanged }) {
+  const [busyId, setBusyId] = useState(null)
+  const [errors, setErrors] = useState([])
+
+  // Which button a booking gets depends on its status. The server decides
+  // the time (its own clock) and the new status; this page only asks.
+  async function record(call, action) {
+    const question =
+      action === 'arrive'
+        ? `Record that ${call.vessel_name} has arrived at ${call.berth_name} now?`
+        : `Record that ${call.vessel_name} has left ${call.berth_name} now?`
+    if (!window.confirm(question)) return
+
+    setBusyId(call.id)
+    setErrors([])
+    try {
+      await apiPost(`/api/vessel-calls/${call.id}/${action}/`, {}, token)
+    } catch (err) {
+      if (err.status === 401) {
+        onUnauthorized()
+        return
+      }
+      setErrors(errorMessages(err))
+    } finally {
+      setBusyId(null)
+    }
+    // Reload after success AND after a refusal: the page may be out of date.
+    onChanged()
+  }
+
   return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Berth</th>
-            <th>Vessel</th>
-            <th>Arrival</th>
-            <th>Departure</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.flatMap((row) =>
-            row.calls.map((call) => (
-              <tr key={call.id}>
-                <td>{row.label}</td>
-                <td>{call.vessel_name}</td>
-                <td>
-                  <PlannedAndActual planned={call.eta} actual={call.ata} />
-                </td>
-                <td>
-                  <PlannedAndActual planned={call.etd} actual={call.atd} />
-                </td>
-                <td>
-                  <span className={`badge ${call.status.toLowerCase()}`}>
-                    {STATUS_LABELS[call.status] ?? call.status}
-                  </span>
-                </td>
-              </tr>
-            )),
-          )}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {errors.length > 0 && (
+        <div className="notice error" role="alert">
+          {errors.map((message) => (
+            <p key={message}>{message}</p>
+          ))}
+        </div>
+      )}
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Berth</th>
+              <th>Vessel</th>
+              <th>Arrival</th>
+              <th>Departure</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.flatMap((row) =>
+              row.calls.map((call) => (
+                <tr key={call.id}>
+                  <td>{row.label}</td>
+                  <td>{call.vessel_name}</td>
+                  <td>
+                    <PlannedAndActual planned={call.eta} actual={call.ata} />
+                  </td>
+                  <td>
+                    <PlannedAndActual planned={call.etd} actual={call.atd} />
+                  </td>
+                  <td>
+                    <span className={`badge ${call.status.toLowerCase()}`}>
+                      {STATUS_LABELS[call.status] ?? call.status}
+                    </span>
+                  </td>
+                  <td>
+                    {call.status === 'EXPECTED' && (
+                      <button
+                        type="button"
+                        className="small"
+                        disabled={busyId !== null}
+                        onClick={() => record(call, 'arrive')}
+                      >
+                        Mark arrived
+                      </button>
+                    )}
+                    {call.status === 'ALONGSIDE' && (
+                      <button
+                        type="button"
+                        className="small"
+                        disabled={busyId !== null}
+                        onClick={() => record(call, 'depart')}
+                      >
+                        Mark departed
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )),
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -241,13 +302,19 @@ function BerthSchedule({ token, onUnauthorized }) {
           <h3>All bookings</h3>
           <p className="notice">
             Each time is the plan. The actual time appears underneath once it
-            has happened.
+            has happened. Use the buttons to record an arrival or a departure;
+            the status changes by itself.
           </p>
-          <CallsTable rows={rows} />
+          <CallsTable
+            rows={rows}
+            token={token}
+            onUnauthorized={onUnauthorized}
+            onChanged={() => setReloadCount((count) => count + 1)}
+          />
         </>
       )}
     </>
   )
 }
 
-export default BerthSchedule  
+export default BerthSchedule

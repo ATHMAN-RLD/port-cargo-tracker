@@ -57,6 +57,7 @@ class VesselCallSerializer(CleanedModelSerializer):
     class Meta:
         model = VesselCall
         fields = "__all__"
+        read_only_fields = ["status"]  # worked out from ata/atd, see the model
 
     def save(self, **kwargs):
         # clean() already catches ordinary clashes. This is the safety net for
@@ -110,4 +111,4 @@ class GateEventSerializer(CleanedModelSerializer):
     class Meta:
         model = GateEvent
         fields = "__all__"
-        read_only_fields = ("timestamp",) 
+        read_only_fields = ("timestamp",)  

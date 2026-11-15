@@ -90,6 +90,38 @@ class VesselCall(models.Model):
             if clash.exists():
                 raise ValidationError("This berth is already booked in that window.")
 
+    def save(self, *args, **kwargs):
+        # The status is never typed in by hand: it follows from the actual
+        # times, so the two can never disagree.
+        #   departure recorded -> Departed
+        #   arrival recorded   -> Alongside
+        #   neither            -> Expected
+        if self.atd:
+            self.status = self.Status.DEPARTED
+        elif self.ata:
+            self.status = self.Status.ALONGSIDE
+        else:
+            self.status = self.Status.EXPECTED
+        super().save(*args, **kwargs)
+
+    def record_arrival(self):
+        """The vessel is alongside now. Uses the server's clock."""
+        if self.ata:
+            raise ValidationError("This vessel has already arrived.")
+        self.ata = timezone.now()
+        self.clean()
+        self.save()
+
+    def record_departure(self):
+        """The vessel has left the berth now. Uses the server's clock."""
+        if not self.ata:
+            raise ValidationError("This vessel has not arrived yet.")
+        if self.atd:
+            raise ValidationError("This vessel has already departed.")
+        self.atd = timezone.now()
+        self.clean()
+        self.save()
+
     def __str__(self):
         return f"{self.vessel.name} arriving {self.eta:%Y-%m-%d}"
 
@@ -221,4 +253,4 @@ class Tariff(models.Model):
     daily_rate_kes = models.DecimalField(max_digits=8, decimal_places=2)
 
     def __str__(self):
-        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day"  
+        return f"{self.size_ft}ft: {self.free_days} free days, KES {self.daily_rate_kes}/day" 

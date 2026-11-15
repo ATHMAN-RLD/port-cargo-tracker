@@ -1,4 +1,9 @@
-from rest_framework import mixins, viewsets
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from rest_framework import mixins, serializers, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from .models import (
     Berth,
@@ -35,6 +40,32 @@ class VesselCallViewSet(viewsets.ModelViewSet):
 
     queryset = VesselCall.objects.select_related("vessel", "berth").order_by("eta")
     serializer_class = VesselCallSerializer
+
+    @action(detail=True, methods=["post"])
+    def arrive(self, request, pk=None):
+        """POST /api/vessel-calls/<id>/arrive/ : the vessel is alongside now."""
+        return self._record(pk, "record_arrival")
+
+    @action(detail=True, methods=["post"])
+    def depart(self, request, pk=None):
+        """POST /api/vessel-calls/<id>/depart/ : the vessel has left now."""
+        return self._record(pk, "record_departure")
+
+    def _record(self, pk, method_name):
+        # The row is locked while we check and change it, so two people
+        # clicking at once cannot both record the same arrival.
+        with transaction.atomic():
+            call = get_object_or_404(
+                VesselCall.objects.select_for_update(), pk=pk
+            )
+            try:
+                getattr(call, method_name)()
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError(
+                    {"non_field_errors": exc.messages}
+                )
+        call = self.get_queryset().get(pk=call.pk)
+        return Response(self.get_serializer(call).data)
 
 
 class YardSlotViewSet(viewsets.ReadOnlyModelViewSet):

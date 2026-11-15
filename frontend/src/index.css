@@ -396,6 +396,21 @@ tbody tr:last-child td {
   margin: 0;
 }
 
+button.small {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+button.small:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .notice.success {
   padding: 8px 12px;
   color: var(--yard-text);

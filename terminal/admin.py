@@ -24,6 +24,7 @@ class BerthAdmin(admin.ModelAdmin):
 @admin.register(VesselCall)
 class VesselCallAdmin(admin.ModelAdmin):
     list_display = ("vessel", "berth", "eta", "etd", "status")
+    readonly_fields = ("status",)  # worked out from the actual times
 
 
 @admin.register(YardSlot)
@@ -61,4 +62,4 @@ class GateEventAdmin(admin.ModelAdmin):
 
 @admin.register(Tariff)
 class TariffAdmin(admin.ModelAdmin):
-    list_display = ("size_ft", "free_days", "daily_rate_kes")
+    list_display = ("size_ft", "free_days", "daily_rate_kes") 

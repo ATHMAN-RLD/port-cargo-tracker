@@ -360,6 +360,84 @@ class ApiTests(APITestCase):
         )
 
 
+class CallStatusTests(APITestCase):
+    """The status follows from the actual times; nobody types it in."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user("clerk", password="Pw-12345!")
+        self.client.force_authenticate(user=user)
+        self.vessel, self.berth, self.call, _ = make_world()
+        self.url = f"/api/vessel-calls/{self.call.id}"
+
+    def status(self):
+        self.call.refresh_from_db()
+        return self.call.status
+
+    def test_new_call_is_expected(self):
+        self.assertEqual(self.status(), "EXPECTED")
+
+    def test_arrive_sets_time_and_status(self):
+        r = self.client.post(f"{self.url}/arrive/")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()["status"], "ALONGSIDE")
+        self.assertIsNotNone(r.json()["ata"])
+        self.assertEqual(self.status(), "ALONGSIDE")
+
+    def test_depart_after_arrive_sets_departed(self):
+        self.client.post(f"{self.url}/arrive/")
+        r = self.client.post(f"{self.url}/depart/")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self.status(), "DEPARTED")
+        self.assertIsNotNone(self.call.atd)
+
+    def test_cannot_depart_before_arriving(self):
+        r = self.client.post(f"{self.url}/depart/")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("not arrived", str(r.json()))
+        self.assertEqual(self.status(), "EXPECTED")
+
+    def test_cannot_arrive_twice(self):
+        self.client.post(f"{self.url}/arrive/")
+        first = VesselCall.objects.get(pk=self.call.pk).ata
+        r = self.client.post(f"{self.url}/arrive/")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("already arrived", str(r.json()))
+        self.assertEqual(VesselCall.objects.get(pk=self.call.pk).ata, first)
+
+    def test_cannot_depart_twice(self):
+        self.client.post(f"{self.url}/arrive/")
+        self.client.post(f"{self.url}/depart/")
+        r = self.client.post(f"{self.url}/depart/")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("already departed", str(r.json()))
+
+    def test_unknown_call_gives_404(self):
+        self.assertEqual(self.client.post("/api/vessel-calls/9999/arrive/").status_code, 404)
+
+    def test_status_cannot_be_set_by_hand_through_the_api(self):
+        r = self.client.patch(self.url + "/", {"status": "DEPARTED"}, format="json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self.status(), "EXPECTED")
+
+    def test_entering_actual_times_by_hand_also_updates_status(self):
+        now = timezone.now()
+        self.call.ata = now - timedelta(days=2)
+        self.call.save()
+        self.assertEqual(self.status(), "ALONGSIDE")
+        self.call.atd = now - timedelta(days=1)
+        self.call.save()
+        self.assertEqual(self.status(), "DEPARTED")
+        self.call.ata = None
+        self.call.atd = None
+        self.call.save()
+        self.assertEqual(self.status(), "EXPECTED")
+
+    def test_anonymous_cannot_record_arrival(self):
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.post(f"{self.url}/arrive/").status_code, 401)
+        self.assertEqual(self.status(), "EXPECTED")
+
+
 class AuthTests(APITestCase):
     """Nobody gets data or makes changes without logging in first."""
 
@@ -403,4 +481,4 @@ class AuthTests(APITestCase):
 
     def test_a_made_up_token_is_refused(self):
         self.client.credentials(HTTP_AUTHORIZATION="Token not-a-real-token")
-        self.assertEqual(self.client.get("/api/containers/").status_code, 401) 
+        self.assertEqual(self.client.get("/api/containers/").status_code, 401)  
