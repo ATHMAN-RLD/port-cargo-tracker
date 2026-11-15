@@ -17,7 +17,20 @@ const BOX_COLORS = [
 // How many containers are stacked in each column on the ship's deck.
 const DECK_STACKS = [3, 4, 4, 3, 4, 4, 2, 3, 4, 3]
 // ...and on the quay (the harbour wall) beside the crane.
-const QUAY_STACKS = [3, 2, 3, 1, 2, 3]
+const QUAY_STACKS = Array.from(
+  { length: 24 },
+  (_, i) => [3, 2, 3, 1, 2, 3, 2, 1, 3, 2][i % 10],
+)
+
+// A row of gentle waves. It is drawn far wider than the picture itself, so
+// on a very wide screen the sea simply carries on instead of stopping.
+function wavePath(y, amplitude, period) {
+  const from = -3000
+  const to = 4200
+  let d = `M${from} ${y}Q${from + period / 2} ${y - amplitude} ${from + period} ${y}`
+  for (let x = from + 2 * period; x <= to; x += period) d += `T${x} ${y}`
+  return `${d}V280H${from}Z`
+}
 
 function stackRects(stacks, startX, baseY, step, keyPrefix) {
   const rects = []
@@ -46,7 +59,7 @@ export function PortScene() {
     <svg
       className="scene"
       viewBox="0 0 1200 280"
-      preserveAspectRatio="xMidYMax slice"
+      preserveAspectRatio="xMidYMax meet"
       aria-hidden="true"
       focusable="false"
     >
@@ -69,7 +82,7 @@ export function PortScene() {
       </g>
 
       {/* the sea behind the ship */}
-      <rect className="sea-back" x="0" y="212" width="1200" height="68" />
+      <rect className="sea-back" x="-3000" y="212" width="7200" height="68" />
 
       {/* the ship */}
       <g>
@@ -88,20 +101,14 @@ export function PortScene() {
       </g>
 
       {/* the waves in front of the ship */}
-      <path
-        className="sea-mid"
-        d="M0 236Q75 226 150 236T300 236T450 236T600 236T750 236T900 236V280H0Z"
-      />
-      <path
-        className="sea-front"
-        d="M0 254Q60 246 120 254T240 254T360 254T480 254T600 254T720 254T840 254T960 254T1080 254T1200 254V280H0Z"
-      />
+      <path className="sea-mid" d={wavePath(236, 10, 150)} />
+      <path className="sea-front" d={wavePath(254, 8, 120)} />
 
       {/* the quay with stacked containers */}
-      <rect className="quay" x="880" y="205" width="320" height="75" />
-      <rect className="quay-top" x="880" y="205" width="320" height="4" />
+      <rect className="quay" x="880" y="205" width="3320" height="75" />
+      <rect className="quay-top" x="880" y="205" width="3320" height="4" />
       <g>{stackRects(QUAY_STACKS, 990, 205, 38, 'quay')}</g>
-      <rect x="990" y="141" width="228" height="64" fill="url(#port-ribs)" opacity="0.9" />
+      <rect x="990" y="141" width={QUAY_STACKS.length * 38} height="64" fill="url(#port-ribs)" opacity="0.9" />
 
       {/* the quay crane */}
       <g className="crane">
@@ -157,6 +164,7 @@ const ICON_PATHS = {
   gate: 'M2 7h11v9H2zM13 10h5l3 3v3h-8zM2 16h19',
   logout: 'M9 4H5v16h4M16 8l4 4-4 4M20 12H9',
   anchor: 'M12 7v13M8.5 11h7M5 14a7 7 0 0 0 14 0',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
 }
 
 export function Icon({ name }) {
@@ -208,4 +216,4 @@ export function EmptyState({ children }) {
       <p className="notice">{children}</p>
     </div>
   )
-}  
+} 

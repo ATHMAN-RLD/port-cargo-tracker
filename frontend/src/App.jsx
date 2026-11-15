@@ -53,7 +53,6 @@ function App() {
     <div className="app">
       {/* The banner: a sky, a ship and a crane, with the app's name on top. */}
       <header className={token ? 'hero' : 'hero hero-tall'}>
-        <PortScene />
         <div className="wrap hero-inner">
           <div className="brand">
             <span className="brand-mark">
@@ -74,6 +73,10 @@ function App() {
               Log out
             </button>
           )}
+        </div>
+        {/* the picture has its own band, so the title never sits on top of it */}
+        <div className="hero-scene">
+          <PortScene />
         </div>
       </header>
 
@@ -126,4 +129,4 @@ function App() {
   )
 }
 
-export default App 
+export default App  

@@ -175,20 +175,30 @@ h3 {
 .hero {
   position: relative;
   overflow: hidden;
-  min-height: 210px;
   color: #fff;
   background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%);
 }
 
-.hero-tall {
-  min-height: 330px;
+/* The picture is sized by its band's height, never by the screen's width,
+   so the ship stays the same size and the sea and quay just carry on sideways. */
+.hero-scene {
+  position: relative;
+  height: clamp(120px, 14vw, 170px);
+}
+
+.hero-tall .hero-scene {
+  height: clamp(170px, 20vw, 240px);
 }
 
 .scene {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  bottom: 0;
+  left: 50%;
   height: 100%;
+  width: auto;
+  aspect-ratio: 1200 / 280;
+  transform: translateX(-50%);
+  overflow: visible;
 }
 
 .scene .sun {
@@ -250,6 +260,7 @@ h3 {
   justify-content: space-between;
   gap: 16px;
   padding-top: 22px;
+  padding-bottom: 14px;
 }
 
 .hero::before {
@@ -257,8 +268,8 @@ h3 {
   position: absolute;
   inset: 0 0 auto 0;
   z-index: 1;
-  height: 150px;
-  background: linear-gradient(180deg, rgb(4 14 22 / 72%), transparent);
+  height: 110px;
+  background: linear-gradient(180deg, rgb(4 14 22 / 60%), transparent);
   pointer-events: none;
 }
 
@@ -863,6 +874,103 @@ tbody tr:hover td {
   border-radius: 8px;
 }
 
+/* ---- search and filter (Containers page) ---- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search {
+  position: relative;
+  flex: 1 1 260px;
+  max-width: 440px;
+}
+
+.search .icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.search input {
+  padding-left: 40px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.chip.active {
+  color: var(--accent-text);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.chip-count {
+  min-width: 22px;
+  padding: 0 6px;
+  font-size: 0.78rem;
+  text-align: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  border-radius: 999px;
+}
+
+.chip.active .chip-count {
+  color: var(--accent-strong);
+  background: var(--accent-text);
+}
+
+.result-count {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.empty-action {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+/* Hidden on screen but still read by screen readers (labels for icons-only inputs). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
 /* ---- phones ---- */
 
 @media (max-width: 520px) {
@@ -873,14 +981,6 @@ tbody tr:hover td {
   .tab {
     padding-left: 12px;
     padding-right: 12px;
-  }
-
-  .hero {
-    min-height: 190px;
-  }
-
-  .hero-tall {
-    min-height: 300px;
   }
 
   .hero-tall h1 {
@@ -896,4 +996,4 @@ tbody tr:hover td {
   td {
     padding: 10px 12px;
   }
-} 
+}  
